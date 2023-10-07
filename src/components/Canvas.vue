@@ -16,6 +16,8 @@ const c = {
 const canvas = ref()
 const ctx = ref()
 
+const colors = ['#111111', '#222222', '#333333', '#444444', '#555555', '#666666', '#777777', '#888888', '#999999', '#aaaaaa', '#bbbbbb', '#cccccc', '#dddddd', '#eeeeee', '#ffffff']
+
 function createCanvas(properties: {width: number, height: number}) {
   ctx.value = canvas.value.getContext('2d')
   canvas.value.width = properties.width
@@ -26,14 +28,15 @@ function createCanvas(properties: {width: number, height: number}) {
   }
 }
 
-let particles: { x: number, y: number, a: number }[] = []
+let particles: { x: number, y: number, a: number, c: string }[] = []
 
 function getParticles() {
   for (let i = 0; i < 50; i++) {
     particles.push({ 
       x: Math.random() * c.width, 
       y: Math.random() * (3 * c.height / 4 - c.height / 4) + c.height / 4, 
-      a: 0 
+      a: 0,
+      c: colors[Math.floor(Math.random() * colors.length)]
     })
   }
 }
@@ -67,8 +70,15 @@ onMounted(() => {
     for (let particle of particles) {
       particle.x += Math.cos(particle.a)
       particle.y += Math.sin(particle.a)
-      particle.a += Math.random() * 0.8 - 0.4;
+      if (particle.x > c.width 
+      || particle.x < 0 
+      || particle.y > c.height
+      || particle.y < 0) {
+        particle.a = (particle.a -Math.PI/2)
+      }
+      else particle.a += Math.random() * 0.8 - 0.4
     }
+
   }
   function animationLoop() {
     requestAnimationFrame(animationLoop)
@@ -78,7 +88,7 @@ onMounted(() => {
       c1.ctx.value.beginPath();
       c1.ctx.value.arc(particle.x, particle.y, 10, 0, Math.PI * 2);
       c1.ctx.value.fill();
-      c1.ctx.value.strokeStyle = "#ff8c00 ";
+      c1.ctx.value.strokeStyle = particle.c;
       c1.ctx.value.stroke();
     }
     move()
@@ -94,7 +104,7 @@ onMounted(() => {
     let c1 = createCanvas({ width: c.width, height: c.height })
     let c2 = createCanvas({ width: c.width, height: c.height })
     let c3 = createCanvas({ width: c.width, height: c.height })
-    writeText(c2.canvas.value, c2.ctx.value, 'Hello World!')
+    writeText(c2.canvas.value, c2.ctx.value, 'line 1\n line 2 \nline 3')
     maskCanvas({ canvas: c1.canvas.value, ctx: c1.ctx.value },
                 { canvas: c2.canvas.value, ctx: c2.ctx.value },
                 { canvas: c3.canvas.value, ctx: c3.ctx.value })
