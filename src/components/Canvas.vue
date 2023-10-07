@@ -16,7 +16,7 @@ const c = {
 const canvas = ref()
 const ctx = ref()
 
-const colors = ['#111111', '#222222', '#333333', '#444444', '#555555', '#666666', '#777777', '#888888', '#999999', '#aaaaaa', '#bbbbbb', '#cccccc', '#dddddd', '#eeeeee', '#ffffff']
+const colors = ['#ff4200', '#ff4200', '#f03e00', '#e53c01', '#d83801', ]
 
 function createCanvas(properties: {width: number, height: number}) {
   ctx.value = canvas.value.getContext('2d')
@@ -42,7 +42,7 @@ function getParticles() {
 }
 
 function writeText(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, text: string) {
-  let size = 100
+  let size = c.width / 5
   context.font = size + "px Montserrat";
   context.fillStyle = "#111111";
   context.textAlign = "center";
@@ -67,9 +67,10 @@ onMounted(() => {
   }
 
   function move() {
+    let speed = 7
     for (let particle of particles) {
-      particle.x += Math.cos(particle.a)
-      particle.y += Math.sin(particle.a)
+      particle.x += Math.cos(particle.a) * speed
+      particle.y += Math.sin(particle.a) * speed
       if (particle.x > c.width 
       || particle.x < 0 
       || particle.y > c.height
@@ -89,6 +90,7 @@ onMounted(() => {
       c1.ctx.value.arc(particle.x, particle.y, 10, 0, Math.PI * 2);
       c1.ctx.value.fill();
       c1.ctx.value.strokeStyle = particle.c;
+      c1.ctx.value.filter = 'blur(5px)'
       c1.ctx.value.stroke();
     }
     move()
@@ -104,7 +106,7 @@ onMounted(() => {
     let c1 = createCanvas({ width: c.width, height: c.height })
     let c2 = createCanvas({ width: c.width, height: c.height })
     let c3 = createCanvas({ width: c.width, height: c.height })
-    writeText(c2.canvas.value, c2.ctx.value, 'line 1\n line 2 \nline 3')
+    writeText(c2.canvas.value, c2.ctx.value, 'Thomas\n\nThomas')
     maskCanvas({ canvas: c1.canvas.value, ctx: c1.ctx.value },
                 { canvas: c2.canvas.value, ctx: c2.ctx.value },
                 { canvas: c3.canvas.value, ctx: c3.ctx.value })
