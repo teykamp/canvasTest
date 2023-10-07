@@ -1,8 +1,6 @@
 <template>
-  <div>
-    <canvas ref="canvas" :style="{
-      border: '1px solid white',
-    }"></canvas>
+  <div :style="{'display': 'flex'}">
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 
@@ -10,8 +8,8 @@
 import { onMounted, ref } from 'vue'
 
 const c = {
-  width: 700,
-  height: 700
+  width: window.innerWidth / 6 < 200 ? 200 : window.innerWidth / 6,
+  height: window.innerWidth / 6 < 200 ? 200 : window.innerWidth / 6
 }
 const canvas = ref()
 const ctx = ref()
@@ -31,7 +29,7 @@ function createCanvas(properties: {width: number, height: number}) {
 let particles: { x: number, y: number, a: number, c: string }[] = []
 
 function getParticles() {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < c.width/50; i++) {
     particles.push({ 
       x: Math.random() * c.width, 
       y: Math.random() * (3 * c.height / 4 - c.height / 4) + c.height / 4, 
@@ -42,8 +40,8 @@ function getParticles() {
 }
 
 function writeText(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, text: string) {
-  let size = c.width / 5
-  context.font = size + "px Montserrat";
+  let size = c.width / 4
+  context.font = `italic ${size}px Montserrat`;
   context.fillStyle = "#111111";
   context.textAlign = "center";
   let lineheight = 70
@@ -84,7 +82,7 @@ onMounted(() => {
   function animationLoop() {
     requestAnimationFrame(animationLoop)
     clear()
-    particleCanvas.ctx.value.lineWidth = 20;
+    particleCanvas.ctx.value.lineWidth = c.width/20;
     for (const particle of particles){
       particleCanvas.ctx.value.beginPath();
       particleCanvas.ctx.value.arc(particle.x, particle.y, 10, 0, Math.PI * 2);
@@ -106,7 +104,7 @@ onMounted(() => {
     let particleCanvas = createCanvas({ width: c.width, height: c.height })
     let textCanvas = createCanvas({ width: c.width, height: c.height })
     let displayCanvas = createCanvas({ width: c.width, height: c.height })
-    writeText(textCanvas.canvas.value, textCanvas.ctx.value, 'Thomas\n\nThomas')
+    writeText(textCanvas.canvas.value, textCanvas.ctx.value, 'Portfolio')
     maskCanvas({ canvas: particleCanvas.canvas.value, ctx: particleCanvas.ctx.value },
                 { canvas: textCanvas.canvas.value, ctx: textCanvas.ctx.value },
                 { canvas: displayCanvas.canvas.value, ctx: displayCanvas.ctx.value })
