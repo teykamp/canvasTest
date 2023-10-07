@@ -53,11 +53,11 @@ function writeText(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D,
   }
 }
 onMounted(() => {
-  function maskCanvas(c1: {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}, c2: {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}, c3: {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}) {
-    c3.ctx.drawImage(c2.canvas, 0, 0, c2.canvas.width, c2.canvas.height);
-    c3.ctx.globalCompositeOperation = 'source-atop';
-    c3.ctx.drawImage(c1.canvas, 0, 0);
-    blur(c1.canvas, c1.ctx, 2)
+  function maskCanvas(particleCanvas: {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}, textCanvas: {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}, displayCanvas: {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}) {
+    displayCanvas.ctx.drawImage(textCanvas.canvas, 0, 0, textCanvas.canvas.width, textCanvas.canvas.height);
+    displayCanvas.ctx.globalCompositeOperation = 'source-atop';
+    displayCanvas.ctx.drawImage(particleCanvas.canvas, 0, 0);
+    blur(particleCanvas.canvas, particleCanvas.ctx, 2)
   }
 
   function blur(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, amt: number) {
@@ -84,32 +84,32 @@ onMounted(() => {
   function animationLoop() {
     requestAnimationFrame(animationLoop)
     clear()
-    c1.ctx.value.lineWidth = 20;
+    particleCanvas.ctx.value.lineWidth = 20;
     for (const particle of particles){
-      c1.ctx.value.beginPath();
-      c1.ctx.value.arc(particle.x, particle.y, 10, 0, Math.PI * 2);
-      c1.ctx.value.fill();
-      c1.ctx.value.strokeStyle = particle.c;
-      c1.ctx.value.filter = 'blur(5px)'
-      c1.ctx.value.stroke();
+      particleCanvas.ctx.value.beginPath();
+      particleCanvas.ctx.value.arc(particle.x, particle.y, 10, 0, Math.PI * 2);
+      particleCanvas.ctx.value.fill();
+      particleCanvas.ctx.value.strokeStyle = particle.c;
+      particleCanvas.ctx.value.filter = 'blur(5px)'
+      particleCanvas.ctx.value.stroke();
     }
     move()
   }
   
     function clear(){
-      c1.ctx.value.globalAlpha = 0.03;
-      c1.ctx.value.fillStyle = '#111111';
-      c1.ctx.value.fillRect(0, 0, c.width, c.height);
-      c1.ctx.value.globalAlpha = 1;
+      particleCanvas.ctx.value.globalAlpha = 0.03;
+      particleCanvas.ctx.value.fillStyle = '#111111';
+      particleCanvas.ctx.value.fillRect(0, 0, c.width, c.height);
+      particleCanvas.ctx.value.globalAlpha = 1;
     }
     getParticles()
-    let c1 = createCanvas({ width: c.width, height: c.height })
-    let c2 = createCanvas({ width: c.width, height: c.height })
-    let c3 = createCanvas({ width: c.width, height: c.height })
-    writeText(c2.canvas.value, c2.ctx.value, 'Thomas\n\nThomas')
-    maskCanvas({ canvas: c1.canvas.value, ctx: c1.ctx.value },
-                { canvas: c2.canvas.value, ctx: c2.ctx.value },
-                { canvas: c3.canvas.value, ctx: c3.ctx.value })
+    let particleCanvas = createCanvas({ width: c.width, height: c.height })
+    let textCanvas = createCanvas({ width: c.width, height: c.height })
+    let displayCanvas = createCanvas({ width: c.width, height: c.height })
+    writeText(textCanvas.canvas.value, textCanvas.ctx.value, 'Thomas\n\nThomas')
+    maskCanvas({ canvas: particleCanvas.canvas.value, ctx: particleCanvas.ctx.value },
+                { canvas: textCanvas.canvas.value, ctx: textCanvas.ctx.value },
+                { canvas: displayCanvas.canvas.value, ctx: displayCanvas.ctx.value })
     
     animationLoop()
     
