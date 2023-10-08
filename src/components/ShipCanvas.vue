@@ -13,6 +13,18 @@ const c = {
 }
 const canvas = ref()
 const ctx = ref()
+let particles: { x: number, y: number, c: string }[] = []
+
+function createParticles() {
+  for (let i = 0; i < c.width-2; i++) {
+    particles.push({
+      x: Math.random() * c.width,
+      y: c.height - 5,
+      c: 'blue'
+    })
+  }
+}
+
 function createCanvas(properties: {width: number, height: number}) {
   ctx.value = canvas.value.getContext('2d')
   canvas.value.width = properties.width
@@ -22,6 +34,11 @@ function createCanvas(properties: {width: number, height: number}) {
     ctx: ctx
   }
 }
+function move() {
+  for (let particle of particles) {
+    particle.y -= 1
+  }
+}
 
 const status = ref({
   setOne: false,
@@ -29,7 +46,17 @@ const status = ref({
 })
 onMounted(() => {
   const baseCanvas = createCanvas(c)
-  
+  createParticles()
+  function animationLoop() {
+    requestAnimationFrame(animationLoop)
+    for (const particle of particles) {
+      baseCanvas.ctx.value.fillStyle = particle.c;
+      baseCanvas.ctx.value.fillRect(particle.x, particle.y, 1, 1)
+    }
+    move()
+  }
+
+  animationLoop()
 })
 
 
