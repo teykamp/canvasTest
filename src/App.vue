@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import Canvas from './components/Canvas.vue'
+// import Canvas from './components/Canvas.vue'
+import ShipCanvas from './components/ShipCanvas.vue'
 </script>
 
 <template>
-  <Canvas />
+  <!-- <Canvas /> -->
+  <ShipCanvas />
 </template>
