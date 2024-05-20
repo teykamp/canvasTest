@@ -7,127 +7,119 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive } from 'vue';
 
-const width = 400
-const height = 400
-const canvas = ref(null)
-const dragging = ref(false)
-const resizing = ref(false)
-const currentCircleIndex = ref(null)
-const isDrawing = ref(false)
-const startX = ref(0)
-const startY = ref(0)
-const currentX = ref(0)
-const currentY = ref(0)
+const width = window.innerWidth - 30
+const height = window.innerHeight - 30
 
-const circles = reactive([])
-const overlaps = reactive([]) // Array to store overlapping regions
+const circlesSelectedByDrag = ref(false)
+
+const canvas = ref(null);
+const dragging = ref(false);
+const resizing = ref(false);
+const currentCircleIndex = ref(null);
+const isDrawing = ref(false);
+const startPoint = reactive({ x: 0, y: 0 });
+const currentPoint = reactive({ x: 0, y: 0 });
+
+const circles = reactive([]);
+const overlaps = reactive([]);
 
 const drawCircle = (ctx, circle) => {
-  ctx.beginPath()
-  ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
-  ctx.fillStyle = 'grey'
-  ctx.fill()
-  
+  ctx.beginPath();
+  ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false);
+  ctx.fillStyle = 'grey';
+  ctx.fill();
   if (circle.selected) {
-    ctx.lineWidth = 5
-    ctx.strokeStyle = 'white'
-    ctx.stroke()
-  //   ctx.beginPath()
-  //   ctx.strokeStyle = 'blue'
-  //   ctx.lineWidth = 1
-  //   ctx.rect(circle.x - circle.radius - 1, circle.y - circle.radius - 1, circle.radius * 2 + 2, circle.radius * 2 + 2)
-  //   ctx.stroke()
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'white';
+    ctx.stroke();
   }
-}
+};
 
 const drawCircles = () => {
-  const ctx = canvas.value.getContext('2d')
-  ctx.clearRect(0, 0, width, height)
-  circles.forEach(circle => drawCircle(ctx, circle))
-  highlightOverlappingAreas(ctx)
-}
+  const ctx = canvas.value.getContext('2d');
+  ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+  circles.forEach(circle => drawCircle(ctx, circle));
+  highlightOverlappingAreas(ctx);
+};
+
+const getMousePos = (event) => {
+  const rect = canvas.value.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+};
 
 const isInsideCircle = (x, y, circle) => {
-  const dx = x - circle.x
-  const dy = y - circle.y
-  return dx * dx + dy * dy <= circle.radius * circle.radius
-}
+  const dx = x - circle.x;
+  const dy = y - circle.y;
+  return dx * dx + dy * dy <= circle.radius * circle.radius;
+};
 
 const isOnEdge = (x, y, circle) => {
-  const dx = x - circle.x
-  const dy = y - circle.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-  return Math.abs(distance - circle.radius) < 5 // Consider within 5px of the edge as on the edge
-}
+  const dx = x - circle.x;
+  const dy = y - circle.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  return Math.abs(distance - circle.radius) < 5;
+};
 
 const startDrag = (event) => {
-  const rect = canvas.value.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
-  const mouseY = event.clientY - rect.top
-  currentCircleIndex.value = circles.findLastIndex(circle => isInsideCircle(mouseX, mouseY, circle) || isOnEdge(mouseX, mouseY, circle))
+  const { x, y } = getMousePos(event);
+  currentCircleIndex.value = circles.findLastIndex(circle => isInsideCircle(x, y, circle) || isOnEdge(x, y, circle));
 
   if (currentCircleIndex.value !== -1) {
-    const circle = circles[currentCircleIndex.value]
-
-    if (isOnEdge(mouseX, mouseY, circle)) {
-      resizing.value = true
-      circle.resizeStartX = mouseX
-      circle.resizeStartY = mouseY
-      circle.startRadius = circle.radius
+    // circle clicked on
+    const circle = circles[currentCircleIndex.value];
+    if (isOnEdge(x, y, circle)) {
+      resizing.value = true;
+      Object.assign(circle, { resizeStartX: x, resizeStartY: y, startRadius: circle.radius });
     } else {
-      dragging.value = true
-      circle.offsetX = mouseX - circle.x
-      circle.offsetY = mouseY - circle.y
+      dragging.value = true;
+      Object.assign(circle, { offsetX: x - circle.x, offsetY: y - circle.y });
     }
 
-    circles.push(circles.splice(currentCircleIndex.value, 1)[0])
-    currentCircleIndex.value = circles.length - 1 
-    circles.forEach((c, index) => c.selected = index === currentCircleIndex.value)
-    drawCircles()
+    circles.push(circles.splice(currentCircleIndex.value, 1)[0]);
+    currentCircleIndex.value = circles.length - 1;
+    circles.forEach((c, index) => c.selected = index === currentCircleIndex.value);
+    drawCircles();
   } else {
-    startSelection(event)
+    startSelection(event);
   }
-}
+};
 
 const drag = (event) => {
   if ((dragging.value || resizing.value) && currentCircleIndex.value !== null) {
-    const rect = canvas.value.getBoundingClientRect()
-    const circle = circles[currentCircleIndex.value]
+    const { x, y } = getMousePos(event);
+    const circle = circles[currentCircleIndex.value];
 
     if (dragging.value) {
-      circle.x = event.clientX - rect.left - circle.offsetX
-      circle.y = event.clientY - rect.top - circle.offsetY
+      Object.assign(circle, { x: x - circle.offsetX, y: y - circle.offsetY });
     } else if (resizing.value) {
-      const mouseX = event.clientX - rect.left
-      const mouseY = event.clientY - rect.top
-      const dx = mouseX - circle.x
-      const dy = mouseY - circle.y
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      circle.radius = Math.max(10, distance) // Minimum radius
+      const dx = x - circle.x;
+      const dy = y - circle.y;
+      circle.radius = Math.max(10, Math.sqrt(dx * dx + dy * dy));
     }
 
-    drawCircles()
+    drawCircles();
   } else {
-    drawSelection(event)
+    drawSelection(event);
   }
-}
+};
 
 const endDrag = () => {
-  dragging.value = false
-  resizing.value = false
-  currentCircleIndex.value = null
-  endSelection()
-}
+  dragging.value = false;
+  resizing.value = false;
+  currentCircleIndex.value = null;
+  endSelection();
+};
 
 const createCircle = (event) => {
-  const rect = canvas.value.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
-  const mouseY = event.clientY - rect.top
+  const { x, y } = getMousePos(event);
   circles.push({
-    x: mouseX,
-    y: mouseY,
+    x,
+    y,
     radius: 70,
     offsetX: 0,
     offsetY: 0,
@@ -135,100 +127,108 @@ const createCircle = (event) => {
     resizeStartY: 0,
     startRadius: 0,
     selected: true,
-  })
-  drawCircles()
-}
+  });
+  drawCircles();
+};
 
 const handleCanvasClick = (event) => {
-  const rect = canvas.value.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
-  const mouseY = event.clientY - rect.top
-  const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(mouseX, mouseY, circle))
+  const { x, y } = getMousePos(event);
+  const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(x, y, circle));
 
-  if (clickedCircleIndex === -1) {
-    // Clicked outside of any circle
-    circles.forEach(circle => circle.selected = false)
-    drawCircles()
+  if (clickedCircleIndex === -1 && !circlesSelectedByDrag.value) {
+    circles.forEach(circle => circle.selected = false);
   }
-}
+  drawCircles();
+  circlesSelectedByDrag.value = false;
+};
 
 const highlightOverlappingAreas = (ctx) => {
-  overlaps.length = 0 // Clear existing overlaps
-
+  overlaps.length = 0;
   for (let i = 0; i < circles.length; i++) {
     for (let j = i + 1; j < circles.length; j++) {
-      const circle1 = circles[i]
-      const circle2 = circles[j]
-      const dx = circle2.x - circle1.x
-      const dy = circle2.y - circle1.y
-      const distance = Math.sqrt(dx * dx + dy * dy)
+      const circle1 = circles[i];
+      const circle2 = circles[j];
+      const dx = circle2.x - circle1.x;
+      const dy = circle2.y - circle1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance < circle1.radius + circle2.radius) {
-        const overlap = {
-          circle1,
-          circle2,
-          color: 'rgba(255, 0, 0, 0.5)',
-        }
-        overlaps.push(overlap)
+        overlaps.push({ circle1, circle2, color: 'rgba(255, 0, 0, 0.5)' });
 
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(circle1.x, circle1.y, circle1.radius, 0, 2 * Math.PI)
-        ctx.clip()
-        ctx.beginPath()
-        ctx.arc(circle2.x, circle2.y, circle2.radius, 0, 2 * Math.PI)
-        ctx.clip()
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(circle1.x, circle1.y, circle1.radius, 0, 2 * Math.PI);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.arc(circle2.x, circle2.y, circle2.radius, 0, 2 * Math.PI);
+        ctx.clip();
 
-        ctx.fillStyle = overlap.color
-        ctx.fillRect(0, 0, width, height)
-        ctx.restore()
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.value.width, canvas.value.height);
+        ctx.restore();
       }
     }
   }
-}
+};
 
 const deleteCircle = () => {
-  const selectedCircleIndex = circles.findIndex(circle => circle.selected)
-  circles.splice(selectedCircleIndex)
-  drawCircles()
-}
+  const selectedCircleIndex = circles.findIndex(circle => circle.selected);
+  if (selectedCircleIndex !== -1) {
+    circles.splice(selectedCircleIndex, 1);
+    drawCircles();
+  }
+};
 
 const startSelection = (event) => {
-  startX.value = event.offsetX
-  startY.value = event.offsetY
-  isDrawing.value = true
-}
+  const { x, y } = getMousePos(event);
+  Object.assign(startPoint, { x, y });
+  isDrawing.value = true;
+};
 
 const drawSelection = (event) => {
-  const ctx = canvas.value.getContext('2d')
+  if (!isDrawing.value) return;
 
-  if (!isDrawing.value) return
+  const ctx = canvas.value.getContext('2d');
+  const { x, y } = getMousePos(event);
+  Object.assign(currentPoint, { x, y });
 
-  currentX.value = event.offsetX
-  currentY.value = event.offsetY
+  const width = currentPoint.x - startPoint.x;
+  const height = currentPoint.y - startPoint.y;
 
-  const width = currentX.value - startX.value
-  const height = currentY.value - startY.value
-  
-  drawCircles()
-  ctx.strokeStyle = 'blue'
-  ctx.lineWidth = 1
-  ctx.strokeRect(startX.value, startY.value, width, height)
-  ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
-  ctx.fillRect(startX.value, startY.value, width, height)
-}
+  drawCircles();
+
+  ctx.strokeStyle = 'blue';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(startPoint.x, startPoint.y, width, height);
+  ctx.fillStyle = 'rgba(0, 0, 255, 0.2)';
+  ctx.fillRect(startPoint.x, startPoint.y, width, height);
+
+  const minX = Math.min(startPoint.x, currentPoint.x);
+  const maxX = Math.max(startPoint.x, currentPoint.x);
+  const minY = Math.min(startPoint.y, currentPoint.y);
+  const maxY = Math.max(startPoint.y, currentPoint.y);
+
+  circles.forEach(circle => {
+    circle.selected = (
+      circle.x >= minX && circle.x <= maxX &&
+      circle.y >= minY && circle.y <= maxY
+    );
+    if (circle.selected) circlesSelectedByDrag.value = true
+  })
+};
 
 const endSelection = () => {
-  isDrawing.value = false
-}
+  isDrawing.value = false;
+};
 
 onMounted(() => {
-  drawCircles()
-})
+  drawCircles();
+});
 </script>
 
 <style scoped>
 canvas {
   border: 1px solid black
 }
+
 </style>
