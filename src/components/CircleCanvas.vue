@@ -30,9 +30,7 @@ const drawCircle = (ctx, circle, fillStyle = 'green', strokeStyle = '#003300') =
 const drawCircles = () => {
   const ctx = canvas.value.getContext('2d');
   ctx.clearRect(0, 0, width, height);
-  for (let i = circles.length - 1; i >= 0; i--) {
-    drawCircle(ctx, circles[i]);
-  }
+  circles.forEach(circle => drawCircle(ctx, circle))
   highlightOverlappingAreas(ctx);
 };
 
@@ -46,16 +44,15 @@ const startDrag = (event) => {
   const rect = canvas.value.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
-  currentCircleIndex.value = circles.findIndex(circle => isInsideCircle(mouseX, mouseY, circle));
+  currentCircleIndex.value = circles.findLastIndex(circle => isInsideCircle(mouseX, mouseY, circle));
   if (currentCircleIndex.value !== -1) {
     dragging.value = true;
     const circle = circles[currentCircleIndex.value];
     circle.offsetX = mouseX - circle.x;
     circle.offsetY = mouseY - circle.y;
 
-    // Move the selected circle to the front of the array
-    circles.unshift(circles.splice(currentCircleIndex.value, 1)[0]);
-    currentCircleIndex.value = 0; // Update the index to the new position
+    circles.push(circles.splice(currentCircleIndex.value, 1)[0]);
+    currentCircleIndex.value = circles.length - 1;
     drawCircles();
   }
 };
