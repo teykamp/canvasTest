@@ -15,6 +15,11 @@ const canvas = ref(null)
 const dragging = ref(false)
 const resizing = ref(false)
 const currentCircleIndex = ref(null)
+const isDrawing = ref(false)
+const startX = ref(0)
+const startY = ref(0)
+const currentX = ref(0)
+const currentY = ref(0)
 
 const circles = reactive([])
 const overlaps = reactive([]) // Array to store overlapping regions
@@ -81,6 +86,8 @@ const startDrag = (event) => {
     currentCircleIndex.value = circles.length - 1 
     circles.forEach((c, index) => c.selected = index === currentCircleIndex.value)
     drawCircles()
+  } else {
+    startSelection(event)
   }
 }
 
@@ -102,6 +109,8 @@ const drag = (event) => {
     }
 
     drawCircles()
+  } else {
+    drawSelection(event)
   }
 }
 
@@ -109,6 +118,7 @@ const endDrag = () => {
   dragging.value = false
   resizing.value = false
   currentCircleIndex.value = null
+  endSelection()
 }
 
 const createCircle = (event) => {
@@ -181,6 +191,35 @@ const deleteCircle = () => {
   const selectedCircleIndex = circles.findIndex(circle => circle.selected)
   circles.splice(selectedCircleIndex)
   drawCircles()
+}
+
+const startSelection = (event) => {
+  startX.value = event.offsetX
+  startY.value = event.offsetY
+  isDrawing.value = true
+}
+
+const drawSelection = (event) => {
+  const ctx = canvas.value.getContext('2d')
+
+  if (!isDrawing.value) return
+
+  currentX.value = event.offsetX
+  currentY.value = event.offsetY
+
+  const width = currentX.value - startX.value
+  const height = currentY.value - startY.value
+  
+  drawCircles()
+  ctx.strokeStyle = 'blue'
+  ctx.lineWidth = 1
+  ctx.strokeRect(startX.value, startY.value, width, height)
+  ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
+  ctx.fillRect(startX.value, startY.value, width, height)
+}
+
+const endSelection = () => {
+  isDrawing.value = false
 }
 
 onMounted(() => {
