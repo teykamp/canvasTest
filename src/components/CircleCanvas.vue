@@ -9,10 +9,11 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 
-const width = window.innerWidth - 30
-const height = window.innerHeight - 30
+const width = window.innerWidth - 30;
+const height = window.innerHeight - 30;
 
-const circlesSelectedByDrag = ref(false)
+const currentId = ref(0);
+const circlesSelectedByDrag = ref(false);
 
 const canvas = ref(null);
 const dragging = ref(false);
@@ -70,19 +71,31 @@ const startDrag = (event) => {
   currentCircleIndex.value = circles.findLastIndex(circle => isInsideCircle(x, y, circle) || isOnEdge(x, y, circle));
 
   if (currentCircleIndex.value !== -1) {
-    // circle clicked on
+    // Circle clicked on
     const circle = circles[currentCircleIndex.value];
     if (isOnEdge(x, y, circle)) {
       resizing.value = true;
-      Object.assign(circle, { resizeStartX: x, resizeStartY: y, startRadius: circle.radius });
+      Object.assign(circle, { startRadius: circle.radius });
     } else {
       dragging.value = true;
-      Object.assign(circle, { offsetX: x - circle.x, offsetY: y - circle.y });
     }
+
+    const selectedCirclesCount = circles.filter(c => c.selected).length;
+    // If no circles are selected, select the clicked circle
+    if (selectedCirclesCount < 2) {
+      circles.forEach((c, index) => c.selected = index === currentCircleIndex.value);
+    }
+
+    // Store the initial offsets for all selected circles
+    circles.forEach(c => {
+      if (c.selected) {
+        c.offsetX = x - c.x;
+        c.offsetY = y - c.y;
+      }
+    });
 
     circles.push(circles.splice(currentCircleIndex.value, 1)[0]);
     currentCircleIndex.value = circles.length - 1;
-    circles.forEach((c, index) => c.selected = index === currentCircleIndex.value);
     drawCircles();
   } else {
     startSelection(event);
@@ -92,11 +105,16 @@ const startDrag = (event) => {
 const drag = (event) => {
   if ((dragging.value || resizing.value) && currentCircleIndex.value !== null) {
     const { x, y } = getMousePos(event);
-    const circle = circles[currentCircleIndex.value];
 
     if (dragging.value) {
-      Object.assign(circle, { x: x - circle.offsetX, y: y - circle.offsetY });
+      circles.forEach(c => {
+        if (c.selected) {
+          c.x = x - c.offsetX;
+          c.y = y - c.offsetY;
+        }
+      });
     } else if (resizing.value) {
+      const circle = circles[currentCircleIndex.value];
       const dx = x - circle.x;
       const dy = y - circle.y;
       circle.radius = Math.max(10, Math.sqrt(dx * dx + dy * dy));
@@ -118,16 +136,13 @@ const endDrag = () => {
 const createCircle = (event) => {
   const { x, y } = getMousePos(event);
   circles.push({
+    id: currentId.value,
     x,
     y,
     radius: 70,
-    offsetX: 0,
-    offsetY: 0,
-    resizeStartX: 0,
-    resizeStartY: 0,
-    startRadius: 0,
     selected: true,
   });
+  currentId.value++;
   drawCircles();
 };
 
@@ -213,8 +228,8 @@ const drawSelection = (event) => {
       circle.x >= minX && circle.x <= maxX &&
       circle.y >= minY && circle.y <= maxY
     );
-    if (circle.selected) circlesSelectedByDrag.value = true
-  })
+    if (circle.selected) circlesSelectedByDrag.value = true;
+  });
 };
 
 const endSelection = () => {
@@ -228,7 +243,6 @@ onMounted(() => {
 
 <style scoped>
 canvas {
-  border: 1px solid black
+  border: 1px solid black;
 }
-
 </style>
