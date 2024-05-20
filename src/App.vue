@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // import Canvas from './components/Canvas.vue'
-import ShipCanvas from './components/ShipCanvas.vue'
+// import ShipCanvas from './components/ShipCanvas.vue'
+import CircleCanvas from './components/CircleCanvas.vue'
 </script>
 
 <template>
   <!-- <Canvas /> -->
-  <ShipCanvas />
+  <!-- <ShipCanvas /> -->
+  <CircleCanvas />
 </template>
