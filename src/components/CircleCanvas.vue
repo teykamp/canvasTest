@@ -21,20 +21,19 @@ const overlaps = reactive([]) // Array to store overlapping regions
 const drawCircle = (ctx, circle) => {
   ctx.beginPath()
   ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
-  ctx.fillStyle = 'green'
+  ctx.fillStyle = 'grey'
   ctx.fill()
-  ctx.lineWidth = 5
-  ctx.strokeStyle = '#003300'
-  ctx.stroke()
-
-  // Draw a box around the circle if it is selected
-  // if (circle.selected) {
+  
+  if (circle.selected) {
+    ctx.lineWidth = 5
+    ctx.strokeStyle = 'white'
+    ctx.stroke()
   //   ctx.beginPath()
   //   ctx.strokeStyle = 'blue'
   //   ctx.lineWidth = 1
   //   ctx.rect(circle.x - circle.radius - 1, circle.y - circle.radius - 1, circle.radius * 2 + 2, circle.radius * 2 + 2)
   //   ctx.stroke()
-  // }
+  }
 }
 
 const drawCircles = () => {
@@ -77,11 +76,8 @@ const startDrag = (event) => {
       circle.offsetY = mouseY - circle.y
     }
 
-    // Move the selected circle to the front of the array
     circles.push(circles.splice(currentCircleIndex.value, 1)[0])
-    currentCircleIndex.value = circles.length - 1 // Update the index to the new position
-
-    // Mark the circle as selected
+    currentCircleIndex.value = circles.length - 1 
     circles.forEach((c, index) => c.selected = index === currentCircleIndex.value)
     drawCircles()
   }
@@ -101,7 +97,7 @@ const drag = (event) => {
       const dx = mouseX - circle.x
       const dy = mouseY - circle.y
       const distance = Math.sqrt(dx * dx + dy * dy)
-      circle.radius = Math.max(10, distance) // Ensure a minimum radius
+      circle.radius = Math.max(10, distance) // Minimum radius
     }
 
     drawCircles()
@@ -127,7 +123,7 @@ const createCircle = (event) => {
     resizeStartX: 0,
     resizeStartY: 0,
     startRadius: 0,
-    selected: false, // Initialize with not selected
+    selected: true,
   })
   drawCircles()
 }
