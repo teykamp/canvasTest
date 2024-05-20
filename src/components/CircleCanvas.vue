@@ -1,7 +1,8 @@
 <template>
   <div>
     <canvas ref="canvas" :width="width" :height="height" @mousedown="startDrag" @mousemove="drag" @mouseup="endDrag"
-      @mouseleave="endDrag" @dblclick="createCircle" @click="handleCanvasClick"></canvas>
+      @mouseleave="endDrag" @dblclick="createCircle" @click.left="handleCanvasClick"
+      @click.right.prevent="deleteCircle"></canvas>
   </div>
 </template>
 
@@ -174,6 +175,12 @@ const highlightOverlappingAreas = (ctx) => {
       }
     }
   }
+}
+
+const deleteCircle = () => {
+  const selectedCircleIndex = circles.findIndex(circle => circle.selected)
+  circles.splice(selectedCircleIndex)
+  drawCircles()
 }
 
 onMounted(() => {
