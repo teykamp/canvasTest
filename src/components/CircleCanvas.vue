@@ -171,13 +171,33 @@ const highlightOverlappingAreas = (ctx) => {
       if (distance < circle1.radius + circle2.radius) {
         const overlap = {
           circles: [circle1, circle2],
-          color: 'rgba(255, 0, 0, 0.5)'
+          color: 'rgba(255, 255, 0, 0.5)'
         }
-        overlaps.push(overlap);
-        drawOverlappingAreas(ctx, overlap)
+        overlaps.unshift(overlap);
+      }
+
+      for (let k = j + 1; k < circles.length; k++) {
+        const circle3 = circles[k];
+        const dx1 = circle3.x - circle1.x;
+        const dy1 = circle3.y - circle1.y;
+        const distance1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+
+        const dx2 = circle3.x - circle2.x;
+        const dy2 = circle3.y - circle2.y;
+        const distance2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+        if (distance1 < circle1.radius + circle3.radius &&
+          distance2 < circle2.radius + circle3.radius) {
+          const overlap = {
+            circles: [circle1, circle2, circle3],
+            color: 'rgba(0, 255, 0, 0.5)'
+          }
+          overlaps.push(overlap);
+        }
       }
     }
   }
+  overlaps.forEach(o => drawOverlappingAreas(ctx, o))
 };
 
 const drawOverlappingAreas = (ctx, overlap) => {
@@ -188,7 +208,7 @@ const drawOverlappingAreas = (ctx, overlap) => {
     ctx.clip()
   })  
 
-  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+  ctx.fillStyle = overlap.color;
   ctx.fillRect(0, 0, canvas.value.width, canvas.value.height);
   ctx.restore();
 }
