@@ -4,6 +4,7 @@
       @mouseleave="endDrag" @dblclick="createCircle" @click.left="handleCanvasClick"
       @click.right.prevent="deleteCircle"></canvas>
   </div>
+  {{ overlaps.length }}
 </template>
 
 <script setup>
@@ -168,23 +169,29 @@ const highlightOverlappingAreas = (ctx) => {
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance < circle1.radius + circle2.radius) {
-        overlaps.push({ circle1, circle2, color: 'rgba(255, 0, 0, 0.5)' });
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(circle1.x, circle1.y, circle1.radius, 0, 2 * Math.PI);
-        ctx.clip();
-        ctx.beginPath();
-        ctx.arc(circle2.x, circle2.y, circle2.radius, 0, 2 * Math.PI);
-        ctx.clip();
-
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.value.width, canvas.value.height);
-        ctx.restore();
+        const overlap = {
+          circles: [circle1, circle2],
+          color: 'rgba(255, 0, 0, 0.5)'
+        }
+        overlaps.push(overlap);
+        drawOverlappingAreas(ctx, overlap)
       }
     }
   }
 };
+
+const drawOverlappingAreas = (ctx, overlap) => {
+  ctx.save()
+  overlap.circles.forEach(c => {
+    ctx.beginPath()
+    ctx.arc(c.x, c.y, c.radius, 0, 2 * Math.PI)
+    ctx.clip()
+  })  
+
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+  ctx.fillRect(0, 0, canvas.value.width, canvas.value.height);
+  ctx.restore();
+}
 
 const deleteCircle = () => {
   const selectedCircleIndex = circles.findIndex(circle => circle.selected);
