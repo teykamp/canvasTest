@@ -159,45 +159,54 @@ const handleCanvasClick = (event) => {
 };
 
 const highlightOverlappingAreas = (ctx) => {
-  overlaps.length = 0;
-  for (let i = 0; i < circles.length; i++) {
-    for (let j = i + 1; j < circles.length; j++) {
-      const circle1 = circles[i];
-      const circle2 = circles[j];
-      const dx = circle2.x - circle1.x;
-      const dy = circle2.y - circle1.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+  overlaps.length = 0;  // Clear the overlaps array reactively
 
-      if (distance < circle1.radius + circle2.radius) {
-        const overlap = {
-          circles: [circle1, circle2],
-          color: 'rgba(255, 255, 0, 0.5)'
+  function isOverlapping(circle1, circle2) {
+    const dx = circle2.x - circle1.x;
+    const dy = circle2.y - circle1.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance < circle1.radius + circle2.radius;
+  }
+
+  function findOverlaps(overlapGroup, startIndex) {
+    if (overlapGroup.length > 1) {
+      const overlapColors = [
+        'rgba(0, 0, 255, 0.5)', 
+        'rgba(255, 0, 100, 0.5)',
+        'rgba(255, 0, 0, 0.5)',  
+        'rgba(255, 255, 100, 0.5)',  
+        'rgba(0, 255, 255, 0.5)' 
+      ];
+      console.log(overlapColors[overlapGroup.length - 2])
+      overlaps.push({
+        circles: [...overlapGroup],
+        color: overlapColors[overlapGroup.length - 2]
+      });
+    }
+
+    for (let i = startIndex; i < circles.length; i++) {
+      let allOverlap = true;
+      for (let j = 0; j < overlapGroup.length; j++) {
+        if (!isOverlapping(overlapGroup[j], circles[i])) {
+          allOverlap = false;
+          break;
         }
-        overlaps.unshift(overlap);
       }
 
-      for (let k = j + 1; k < circles.length; k++) {
-        const circle3 = circles[k];
-        const dx1 = circle3.x - circle1.x;
-        const dy1 = circle3.y - circle1.y;
-        const distance1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-
-        const dx2 = circle3.x - circle2.x;
-        const dy2 = circle3.y - circle2.y;
-        const distance2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-        if (distance1 < circle1.radius + circle3.radius &&
-          distance2 < circle2.radius + circle3.radius) {
-          const overlap = {
-            circles: [circle1, circle2, circle3],
-            color: 'rgba(0, 255, 0, 0.5)'
-          }
-          overlaps.push(overlap);
-        }
+      if (allOverlap) {
+        overlapGroup.push(circles[i]);
+        findOverlaps(overlapGroup, i + 1);
+        overlapGroup.pop();
       }
     }
   }
-  overlaps.forEach(o => drawOverlappingAreas(ctx, o))
+
+  findOverlaps([], 0);
+  // IMPORTANT for render order
+  overlaps.sort((a, b) => a.circles.length - b.circles.length);
+
+  console.log(JSON.stringify(overlaps, null, 2))
+  overlaps.forEach(o => drawOverlappingAreas(ctx, o));
 };
 
 const drawOverlappingAreas = (ctx, overlap) => {
