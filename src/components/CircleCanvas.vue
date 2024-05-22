@@ -4,7 +4,6 @@
       @mouseleave="endDrag" @dblclick="createCircle" @click.left="handleCanvasClick"
       @click.right.prevent="deleteCircle"></canvas>
   </div>
-  {{ overlaps.length }}
 </template>
 
 <script setup>
@@ -13,7 +12,8 @@ import { ref, onMounted, reactive } from 'vue';
 const width = window.innerWidth - 30;
 const height = window.innerHeight - 30;
 
-const currentId = ref(0);
+const currentCircleId = ref(0);
+const currentOverlapId = ref(0)
 const circlesSelectedByDrag = ref(false);
 
 const canvas = ref(null);
@@ -30,7 +30,7 @@ const overlaps = reactive([]);
 const drawCircle = (ctx, circle) => {
   ctx.beginPath();
   ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false);
-  ctx.fillStyle = 'grey';
+  ctx.fillStyle = circle.color;
   ctx.fill();
   if (circle.selected) {
     ctx.lineWidth = 5;
@@ -72,7 +72,6 @@ const startDrag = (event) => {
   currentCircleIndex.value = circles.findLastIndex(circle => isInsideCircle(x, y, circle) || isOnEdge(x, y, circle));
 
   if (currentCircleIndex.value !== -1) {
-    // Circle clicked on
     const circle = circles[currentCircleIndex.value];
     if (isOnEdge(x, y, circle)) {
       resizing.value = true;
@@ -87,7 +86,6 @@ const startDrag = (event) => {
       circles.forEach((c, index) => c.selected = index === currentCircleIndex.value);
     }
 
-    // Store the initial offsets for all selected circles
     circles.forEach(c => {
       if (c.selected) {
         c.offsetX = x - c.x;
@@ -137,29 +135,53 @@ const endDrag = () => {
 const createCircle = (event) => {
   const { x, y } = getMousePos(event);
   circles.push({
-    id: currentId.value,
+    id: currentCircleId.value,
     x,
     y,
     radius: 70,
     selected: true,
+    color: 'rgba(255, 255, 255, 0.6)'
   });
-  currentId.value++;
+  currentCircleId.value++;
   drawCircles();
 };
 
 const handleCanvasClick = (event) => {
   const { x, y } = getMousePos(event);
+  let foundOverlap = false;
+
+  // // Reverse the order to check topmost overlaps first
+  // const reversedOverlaps = overlaps.slice().reverse();
+
+  // for (let i = 0; i < reversedOverlaps.length; i++) {
+  //   const overlap = reversedOverlaps[i];
+  //   const allInside = overlap.circles.every(circle => isInsideCircle(x, y, circle));
+  //   if (allInside && !foundOverlap) {
+  //     overlap.color = 'rgba(0, 255, 0, 0.5)';  // Turn overlap bright green
+  //     overlaps[i] = { ...overlap, color: 'rgba(0, 255, 0, 0.5)' };  // Ensure reactivity
+  //     console.log(overlap)
+  //     foundOverlap = true;
+  //     break;  // Exit early since we found an overlap
+  //   } else if (!allInside) {
+  //     overlaps[i] = { ...overlap, color: overlap.originalColor }; // Restore original color if not selected
+  //   }
+  // }
+  
+  const ctx = canvas.value.getContext('2d');
   const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(x, y, circle));
 
   if (clickedCircleIndex === -1 && !circlesSelectedByDrag.value) {
     circles.forEach(circle => circle.selected = false);
   }
   drawCircles();
+
+
   circlesSelectedByDrag.value = false;
 };
 
 const highlightOverlappingAreas = (ctx) => {
-  overlaps.length = 0;  // Clear the overlaps array reactively
+  overlaps.length = 0;
+  currentOverlapId.value = 0
 
   function isOverlapping(circle1, circle2) {
     const dx = circle2.x - circle1.x;
@@ -171,17 +193,20 @@ const highlightOverlappingAreas = (ctx) => {
   function findOverlaps(overlapGroup, startIndex) {
     if (overlapGroup.length > 1) {
       const overlapColors = [
-        'rgba(0, 0, 255, 0.5)', 
+        'rgba(0, 0, 255, 0.5)',
         'rgba(255, 0, 100, 0.5)',
-        'rgba(255, 0, 0, 0.5)',  
-        'rgba(255, 255, 100, 0.5)',  
-        'rgba(0, 255, 255, 0.5)' 
+        'rgba(255, 0, 0, 0.5)',
+        'rgba(255, 255, 100, 0.5)',
+        'rgba(0, 255, 255, 0.5)'
       ];
-      console.log(overlapColors[overlapGroup.length - 2])
+      const color = overlapColors[overlapGroup.length - 2];
       overlaps.push({
         circles: [...overlapGroup],
-        color: overlapColors[overlapGroup.length - 2]
+        color,
+        originalColor: color,
+        id: currentOverlapId.value
       });
+      currentOverlapId.value++
     }
 
     for (let i = startIndex; i < circles.length; i++) {
@@ -205,22 +230,21 @@ const highlightOverlappingAreas = (ctx) => {
   // IMPORTANT for render order
   overlaps.sort((a, b) => a.circles.length - b.circles.length);
 
-  console.log(JSON.stringify(overlaps, null, 2))
   overlaps.forEach(o => drawOverlappingAreas(ctx, o));
 };
 
 const drawOverlappingAreas = (ctx, overlap) => {
-  ctx.save()
+  ctx.save();
   overlap.circles.forEach(c => {
-    ctx.beginPath()
-    ctx.arc(c.x, c.y, c.radius, 0, 2 * Math.PI)
-    ctx.clip()
-  })  
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.radius, 0, 2 * Math.PI);
+    ctx.clip();
+  });
 
   ctx.fillStyle = overlap.color;
   ctx.fillRect(0, 0, canvas.value.width, canvas.value.height);
   ctx.restore();
-}
+};
 
 const deleteCircle = () => {
   const selectedCircleIndex = circles.findIndex(circle => circle.selected);
