@@ -4,7 +4,7 @@ const alphabet = 'abcdefghijklmnopqrstuvwxyz'
 
 export const convertFromNameToId = (circleName: string | Ref<string>) => {
   const name = unref(circleName).toLocaleLowerCase()
-  return alphabet.split('').findIndex(letter => letter === name)
+  return alphabet.split('').findIndex(letter => letter === name) + 1 // id starts at 1
 }
 
 export const convertNameListToIdList = (nameList: string[][] | Ref<string[][]>) => {
@@ -14,7 +14,7 @@ export const convertNameListToIdList = (nameList: string[][] | Ref<string[][]>) 
 
 export const convertFromIdToName = (circleId: number | Ref<number>) => {
   const id = unref(circleId)
-  if (id < 26) return alphabet.split('')[id]
+  if (id < 26) return alphabet.split('')[id - 1].toLocaleUpperCase()
   else return 'No More Letters'
 }
 
