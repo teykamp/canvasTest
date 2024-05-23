@@ -192,17 +192,16 @@ const handleCanvasClick = (event: MouseEvent) => {
   const { x, y } = getMousePos(event)
   let foundOverlap = false
 
-  if (dragging.value || resizing.value || isSelecting.value)
-    for (let i = overlaps.length - 1; i >= 0; i--) {
-      const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
-      if (allInside && !foundOverlap) {
-        circles.forEach(circle => circle.selected = false)
-        selectedOverlap.value = overlaps[i]
-        selectedOverlap.value.color = 'rgba(0, 255, 0, 1)'
-        foundOverlap = true
-        break
-      }
+  for (let i = overlaps.length - 1; i >= 0; i--) {
+    const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
+    if (allInside && !foundOverlap) {
+      circles.forEach(circle => circle.selected = false)
+      selectedOverlap.value = overlaps[i]
+      selectedOverlap.value.color = 'rgba(0, 255, 0, 1)'
+      foundOverlap = true
+      break
     }
+  }
   
   const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(x, y, circle))
 
