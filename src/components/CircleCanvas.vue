@@ -26,6 +26,8 @@ import useGetAllSelectablePieces from '../composables/useGetAllSelectablePieces'
 
 const thingToTest = ref([['A'], ['A', 'B'], ['B']])
 
+const allSections = ref<string[][]>([])
+
 const width = window.innerWidth - 30
 const height = window.innerHeight - 30
 
@@ -103,6 +105,7 @@ const startDrag = (event: MouseEvent) => {
 }
 
 const drag = (event: MouseEvent) => {
+  allSections.value = getAllSelectablePieces(circles, overlaps)
   if ((dragging.value || resizing.value) && currentCircleIndex.value !== null) {
     const { x, y } = getMousePos(event)
 
@@ -131,7 +134,6 @@ const endDrag = () => {
   resizing.value = false
   currentCircleIndex.value = null
   endSelection()
-  getAllSelectablePieces(circles, overlaps)
 }
 
 const createCircle = (event: MouseEvent) => {

@@ -10,7 +10,7 @@ const useGetAllSelectablePieces = () => {
     const circlesLength = circles.length
     const overlapsChanged = JSON.stringify(overlaps) !== JSON.stringify(prevOverlaps)
 
-    if (circlesLength === prevCirclesLength && !overlapsChanged) {
+    if (circlesLength === prevCirclesLength && !overlapsChanged && memoizedResult) {
       return memoizedResult
     }
 
@@ -26,7 +26,6 @@ const useGetAllSelectablePieces = () => {
     })
 
     memoizedResult = selectablePieces
-    console.log(JSON.stringify(selectablePieces, null, 2))
     return selectablePieces
   }
 }
