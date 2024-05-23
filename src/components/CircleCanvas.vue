@@ -38,6 +38,7 @@ interface Overlap {
 
 const width = window.innerWidth - 30
 const height = window.innerHeight - 30
+const selectedColor = 'rgba(0, 255, 0, 1)'
 
 const currentCircleId = ref(0)
 const currentOverlapId = ref(0)
@@ -54,25 +55,28 @@ const selectionStartPoint = reactive({ x: 0, y: 0 })
 const circles = reactive<Circle[]>([])
 const overlaps = reactive<Overlap[]>([])
 
-const drawCircle = (ctx: CanvasRenderingContext2D, circle: Circle) => {
+const drawCircleBackground = (ctx: CanvasRenderingContext2D, circle: Circle) => {
   ctx.beginPath()
   ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
-  ctx.fillStyle = circle.color
+  ctx.fillStyle = circle.selected ? selectedColor : circle.color
   ctx.fill()
-  // TODO should be rendered last
-  if (circle.selected) {
-    ctx.lineWidth = 5
-    ctx.strokeStyle = 'white'
-    ctx.stroke()
-  }
+}
+
+const drawCircleOutline = (ctx: CanvasRenderingContext2D, circle: Circle) => {
+  ctx.beginPath()
+  ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
+  ctx.lineWidth = 5
+  ctx.strokeStyle = circle.selected ? 'white' : 'grey'
+  ctx.stroke()
 }
 
 const drawCircles = () => {
   if (!canvas.value) return
   const ctx = canvas.value.getContext('2d')!
   ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
-  circles.forEach(circle => drawCircle(ctx, circle))
+  circles.forEach(circle => drawCircleBackground(ctx, circle))
   highlightOverlappingAreas(ctx)
+  circles.forEach(circle => drawCircleOutline(ctx, circle))
 }
 
 const getMousePos = (event: MouseEvent) => {
@@ -140,7 +144,6 @@ const startDrag = (event: MouseEvent) => {
 }
 
 const drag = (event: MouseEvent) => {
-  selectedOverlap.value = null
   if ((dragging.value || resizing.value) && currentCircleIndex.value !== null) {
     const { x, y } = getMousePos(event)
 
@@ -169,7 +172,6 @@ const endDrag = () => {
   resizing.value = false
   currentCircleIndex.value = null
   endSelection()
-  selectedOverlap.value = null
 }
 
 const createCircle = (event: MouseEvent) => {
@@ -180,7 +182,7 @@ const createCircle = (event: MouseEvent) => {
     y,
     radius: 70,
     selected: true,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 1)',
     offsetX: 0,
     offsetY: 0,
   })
@@ -197,7 +199,7 @@ const handleCanvasClick = (event: MouseEvent) => {
     if (allInside && !foundOverlap) {
       circles.forEach(circle => circle.selected = false)
       selectedOverlap.value = overlaps[i]
-      selectedOverlap.value.color = 'rgba(0, 255, 0, 1)'
+      selectedOverlap.value.color = selectedColor
       foundOverlap = true
       break
     }
@@ -224,14 +226,7 @@ const isOverlapping = (circle1: Circle, circle2: Circle) => {
 
 const findOverlaps = (overlapGroup: Circle[], startIndex: number) => {
   if (overlapGroup.length > 1) {
-    const overlapColors = [
-      'rgba(255, 190, 11, 1)',
-      'rgba(251, 86, 7, 1)',
-      'rgba(255, 0, 110, 1)',
-      'rgba(131, 56, 236, 1)',
-      'rgba(58, 134, 255, 1)'
-    ]
-    const color = overlapColors[overlapGroup.length - 2]
+    const color = 'rgba(0, 0, 0, 1)'
     overlaps.push({
       circles: [...overlapGroup],
       color,
@@ -335,7 +330,6 @@ const drawSelection = (event: MouseEvent) => {
 }
 
 const endSelection = () => {
-  selectedOverlap.value = null
   isSelecting.value = false
 }
 
