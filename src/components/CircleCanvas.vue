@@ -45,6 +45,8 @@ const selectedOverlap = ref<Overlap | null>(null)
 
 const circles = reactive<Circle[]>([])
 
+const getAllSelectablePieces = useGetAllSelectablePieces()
+
 
 const { drawCircles } = useRenderCanvas(canvas, circles, overlaps, currentOverlapId, selectedOverlap, convertNameListToIdList(thingToTest))
 
@@ -129,7 +131,7 @@ const endDrag = () => {
   resizing.value = false
   currentCircleIndex.value = null
   endSelection()
-  useGetAllSelectablePieces(circles, overlaps)
+  getAllSelectablePieces(circles, overlaps)
 }
 
 const createCircle = (event: MouseEvent) => {
