@@ -6,7 +6,8 @@ const useRenderCanvas = (
   canvas: Ref<HTMLCanvasElement | null>, 
   circles: Circle[], overlaps: Overlap[], 
   currentOverlapId: Ref<number>, 
-  selectedOverlap: Ref<Overlap | null>
+  selectedOverlap: Ref<Overlap | null>,
+  selectedSections: number[][]
 ) => {
 
   const selectColor = 'rgba(0, 255, 0, 1)'
@@ -50,7 +51,7 @@ const useRenderCanvas = (
   }
 
 
-  const renderArrayList = (highlightIds: number[][]) => {
+  const renderSelectedSections = (highlightIds: number[][]) => {
     highlightIds.forEach(ids => {
       if (ids.length === 1) {
         const id = ids[0]
@@ -116,7 +117,7 @@ const useRenderCanvas = (
       IMPORTANT thing here is that if you want regions that exclude others, render order matters. if you want
       something union with something but excluding something else, then put it behind those and have the stuff render on top of it.
     */
-    renderArrayList([[0], [0, 1], [1, 2], [1]]) // IMPORTANT has to be after overlaps get generated
+    renderSelectedSections(selectedSections) // IMPORTANT has to be after overlaps get generated
     overlaps.forEach(o => drawOverlappingAreas(ctx, o))
   }   
 

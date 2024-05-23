@@ -21,9 +21,10 @@ import { ref, onMounted, reactive } from 'vue'
 import type { Circle, Overlap } from '../types/types'
 import useRenderCanvas from '../composables/useRenderCanvas'
 import { isInsideCircle, isOnEdge} from '../utils/circleUtils'
-// import { convertNameListToIdList } from '../utils/idToNameUtils'
+import { convertNameListToIdList } from '../utils/idToNameUtils'
 
-// const thingToTest = [['A'], ['A', 'B'], ['B']]
+
+const thingToTest = ref([['A'], ['A', 'B'], ['B']])
 
 const width = window.innerWidth - 30
 const height = window.innerHeight - 30
@@ -44,7 +45,7 @@ const selectedOverlap = ref<Overlap | null>(null)
 
 const circles = reactive<Circle[]>([])
 
-const { drawCircles } = useRenderCanvas(canvas, circles, overlaps, currentOverlapId, selectedOverlap)
+const { drawCircles } = useRenderCanvas(canvas, circles, overlaps, currentOverlapId, selectedOverlap, convertNameListToIdList(thingToTest))
 
 const getMousePos = (event: MouseEvent) => {
 
@@ -151,18 +152,16 @@ const handleCanvasClick = (event: MouseEvent) => {
   // Selecting Circle Sections:
   // TODO: INCOMPLETE needs to be able to select subsections
 
-  // let foundOverlap = false
+  let foundOverlap = false
 
-  // for (let i = overlaps.length - 1; i >= 0; i--) {
-  //   const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
-  //   if (allInside && !foundOverlap) {
-  //     circles.forEach(circle => circle.selected = false)
-  //     selectedOverlap.value = overlaps[i]
-  //     selectedOverlap.value.color = selectColor
-  //     foundOverlap = true
-  //     break
-  //   }
-  // }
+  for (let i = overlaps.length - 1; i >= 0; i--) {
+    const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
+    if (allInside && !foundOverlap) {
+      console.log(overlaps[i])
+      foundOverlap = true
+      break
+    }
+  }
   
   const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(x, y, circle))
 
