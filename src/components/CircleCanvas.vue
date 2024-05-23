@@ -18,32 +18,18 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
 
-interface Circle {
-  id: number
-  x: number
-  y: number
-  radius: number
-  selected: boolean
-  color: string
-  offsetX: number
-  offsetY: number
-}
+import type { Circle, Overlap } from '../types/types'
+import useRenderCanvas from '../composables/useRenderCanvas'
+import { isInsideCircle, isOnEdge} from '../utils/circleUtils'
+// import { convertNameListToIdList } from '../utils/idToNameUtils'
 
-interface Overlap {
-  id: number
-  circles: Circle[]
-  color: string
-  originalColor: string
-}
+// const thingToTest = [['A'], ['A', 'B'], ['B']]
 
 const width = window.innerWidth - 30
 const height = window.innerHeight - 30
-const selectedColor = 'rgba(0, 255, 0, 1)'
 
 const currentCircleId = ref(0)
-const currentOverlapId = ref(0)
 const circlesSelectedByDrag = ref(false)
-const selectedOverlap = ref<Overlap | null>(null)
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const dragging = ref(false)
@@ -52,53 +38,22 @@ const currentCircleIndex = ref<number | null>(null)
 const isSelecting = ref(false)
 const selectionStartPoint = reactive({ x: 0, y: 0 })
 
-const circles = reactive<Circle[]>([])
+const currentOverlapId = ref(0)
 const overlaps = reactive<Overlap[]>([])
+const selectedOverlap = ref<Overlap | null>(null)
 
-const drawCircleBackground = (ctx: CanvasRenderingContext2D, circle: Circle) => {
-  ctx.beginPath()
-  ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
-  ctx.fillStyle = circle.selected ? selectedColor : circle.color
-  ctx.fill()
-}
+const circles = reactive<Circle[]>([])
 
-const drawCircleOutline = (ctx: CanvasRenderingContext2D, circle: Circle) => {
-  ctx.beginPath()
-  ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
-  ctx.lineWidth = 5
-  ctx.strokeStyle = circle.selected ? 'white' : 'grey'
-  ctx.stroke()
-}
-
-const drawCircles = () => {
-  if (!canvas.value) return
-  const ctx = canvas.value.getContext('2d')!
-  ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
-  circles.forEach(circle => drawCircleBackground(ctx, circle))
-  highlightOverlappingAreas(ctx)
-  circles.forEach(circle => drawCircleOutline(ctx, circle))
-}
+const { drawCircles } = useRenderCanvas(canvas, circles, overlaps, currentOverlapId, selectedOverlap)
 
 const getMousePos = (event: MouseEvent) => {
+
   if (!canvas.value) return { x: 0, y: 0 }
   const rect = canvas.value.getBoundingClientRect()
   return {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top,
   }
-}
-
-const isInsideCircle = (x: number, y: number, circle: Circle) => {
-  const dx = x - circle.x
-  const dy = y - circle.y
-  return dx * dx + dy * dy <= circle.radius * circle.radius
-}
-
-const isOnEdge = (x: number, y: number, circle: Circle) => {
-  const dx = x - circle.x
-  const dy = y - circle.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-  return Math.abs(distance - circle.radius) < 5
 }
 
 const findLastIndex = <T>(arr: T[], predicate: (value: T, index: number, obj: T[]) => boolean) => {
@@ -192,18 +147,22 @@ const createCircle = (event: MouseEvent) => {
 
 const handleCanvasClick = (event: MouseEvent) => {
   const { x, y } = getMousePos(event)
-  let foundOverlap = false
+  
+  // Selecting Circle Sections:
+  // TODO: INCOMPLETE needs to be able to select subsections
 
-  for (let i = overlaps.length - 1; i >= 0; i--) {
-    const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
-    if (allInside && !foundOverlap) {
-      circles.forEach(circle => circle.selected = false)
-      selectedOverlap.value = overlaps[i]
-      selectedOverlap.value.color = selectedColor
-      foundOverlap = true
-      break
-    }
-  }
+  // let foundOverlap = false
+
+  // for (let i = overlaps.length - 1; i >= 0; i--) {
+  //   const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
+  //   if (allInside && !foundOverlap) {
+  //     circles.forEach(circle => circle.selected = false)
+  //     selectedOverlap.value = overlaps[i]
+  //     selectedOverlap.value.color = selectColor
+  //     foundOverlap = true
+  //     break
+  //   }
+  // }
   
   const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(x, y, circle))
 
@@ -215,72 +174,6 @@ const handleCanvasClick = (event: MouseEvent) => {
 
 
   circlesSelectedByDrag.value = false
-}
-
-const isOverlapping = (circle1: Circle, circle2: Circle) => {
-  const dx = circle2.x - circle1.x
-  const dy = circle2.y - circle1.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-  return distance < circle1.radius + circle2.radius
-}
-
-const findOverlaps = (overlapGroup: Circle[], startIndex: number) => {
-  if (overlapGroup.length > 1) {
-    const color = 'rgba(0, 0, 0, 1)'
-    overlaps.push({
-      circles: [...overlapGroup],
-      color,
-      originalColor: color,
-      id: currentOverlapId.value
-    })
-    currentOverlapId.value++
-  }
-
-  for (let i = startIndex; i < circles.length; i++) {
-    let allOverlap = true
-    for (let j = 0; j < overlapGroup.length; j++) {
-      if (!isOverlapping(overlapGroup[j], circles[i])) {
-        allOverlap = false
-        break
-      }
-    }
-
-    if (allOverlap) {
-      overlapGroup.push(circles[i])
-      findOverlaps(overlapGroup, i + 1)
-      overlapGroup.pop()
-    }
-  }
-}
-
-const highlightOverlappingAreas = (ctx: CanvasRenderingContext2D) => {
-  overlaps.length = 0
-  currentOverlapId.value = 0
-
-  findOverlaps([], 0)
-  // IMPORTANT for render order
-  overlaps.sort((a, b) => a.circles.length - b.circles.length)
-  if (selectedOverlap.value) overlaps.push(selectedOverlap.value)
-  /*
-    TODO thing here is that if you want regions that exclude others, render order matters. if you want
-    something union with something but excluding something else, then put it behind those and have the stuff render on top of it.
-  */
-
-  overlaps.forEach(o => drawOverlappingAreas(ctx, o))
-}
-
-const drawOverlappingAreas = (ctx: CanvasRenderingContext2D, overlap: Overlap) => {
-  if (!canvas.value) return
-  ctx.save()
-  overlap.circles.forEach(c => {
-    ctx.beginPath()
-    ctx.arc(c.x, c.y, c.radius, 0, 2 * Math.PI)
-    ctx.clip()
-  })
-
-  ctx.fillStyle = overlap.color
-  ctx.fillRect(0, 0, canvas.value.width, canvas.value.height)
-  ctx.restore()
 }
 
 const deleteCircle = () => {
