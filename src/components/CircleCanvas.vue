@@ -30,10 +30,10 @@ interface Circle {
 }
 
 interface Overlap {
+  id: number
   circles: Circle[]
   color: string
   originalColor: string
-  id: number
 }
 
 const width = window.innerWidth - 30
@@ -48,7 +48,7 @@ const canvas = ref<HTMLCanvasElement | null>(null)
 const dragging = ref(false)
 const resizing = ref(false)
 const currentCircleIndex = ref<number | null>(null)
-const isDrawing = ref(false)
+const isSelecting = ref(false)
 const selectionStartPoint = reactive({ x: 0, y: 0 })
 
 const circles = reactive<Circle[]>([])
@@ -59,6 +59,7 @@ const drawCircle = (ctx: CanvasRenderingContext2D, circle: Circle) => {
   ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI, false)
   ctx.fillStyle = circle.color
   ctx.fill()
+  // TODO should be rendered last
   if (circle.selected) {
     ctx.lineWidth = 5
     ctx.strokeStyle = 'white'
@@ -139,6 +140,7 @@ const startDrag = (event: MouseEvent) => {
 }
 
 const drag = (event: MouseEvent) => {
+  selectedOverlap.value = null
   if ((dragging.value || resizing.value) && currentCircleIndex.value !== null) {
     const { x, y } = getMousePos(event)
 
@@ -190,19 +192,17 @@ const handleCanvasClick = (event: MouseEvent) => {
   const { x, y } = getMousePos(event)
   let foundOverlap = false
 
-  const reversedOverlaps = overlaps.slice().reverse()
-  // TODO: just run for loop in reverse
-
-  for (let i = 0; i < reversedOverlaps.length; i++) {
-    const allInside = reversedOverlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
-    if (allInside && !foundOverlap) {
-      circles.forEach(circle => circle.selected = false)
-      selectedOverlap.value = reversedOverlaps[i]
-      selectedOverlap.value.color = 'rgba(0, 255, 0, 1)'
-      foundOverlap = true
-      break
+  if (dragging.value || resizing.value || isSelecting.value)
+    for (let i = overlaps.length - 1; i >= 0; i--) {
+      const allInside = overlaps[i].circles.every(circle => isInsideCircle(x, y, circle))
+      if (allInside && !foundOverlap) {
+        circles.forEach(circle => circle.selected = false)
+        selectedOverlap.value = overlaps[i]
+        selectedOverlap.value.color = 'rgba(0, 255, 0, 1)'
+        foundOverlap = true
+        break
+      }
     }
-  }
   
   const clickedCircleIndex = circles.findIndex(circle => isInsideCircle(x, y, circle))
 
@@ -267,6 +267,10 @@ const highlightOverlappingAreas = (ctx: CanvasRenderingContext2D) => {
   // IMPORTANT for render order
   overlaps.sort((a, b) => a.circles.length - b.circles.length)
   if (selectedOverlap.value) overlaps.push(selectedOverlap.value)
+  /*
+    TODO thing here is that if you want regions that exclude others, render order matters. if you want
+    something union with something but excluding something else, then put it behind those and have the stuff render on top of it.
+  */
 
   overlaps.forEach(o => drawOverlappingAreas(ctx, o))
 }
@@ -296,11 +300,11 @@ const deleteCircle = () => {
 const startSelection = (event: MouseEvent) => {
   const { x, y } = getMousePos(event)
   Object.assign(selectionStartPoint, { x, y })
-  isDrawing.value = true
+  isSelecting.value = true
 }
 
 const drawSelection = (event: MouseEvent) => {
-  if (!isDrawing.value || !canvas.value) return
+  if (!isSelecting.value || !canvas.value) return
 
   const ctx = canvas.value.getContext('2d')!
   const { x, y } = getMousePos(event)
@@ -333,7 +337,7 @@ const drawSelection = (event: MouseEvent) => {
 
 const endSelection = () => {
   selectedOverlap.value = null
-  isDrawing.value = false
+  isSelecting.value = false
 }
 
 onMounted(() => {
