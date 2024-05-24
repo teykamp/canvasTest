@@ -7,7 +7,6 @@ const useRenderCanvas = (
   circles: Circle[], overlaps: Overlap[], 
   currentOverlapId: Ref<number>, 
   selectedOverlap: Ref<Overlap | null>,
-  selectedSections: number[][]
 ) => {
 
   const selectColor = 'rgba(0, 255, 0, 1)'
@@ -27,12 +26,12 @@ const useRenderCanvas = (
     ctx.stroke()
   }
 
-  const drawCircles = () => {
+  const drawCircles = (selectedSections: number[][]) => {
     if (!canvas.value) return
     const ctx = canvas.value.getContext('2d')!
     ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
     circles.forEach(circle => drawCircleBackground(ctx, circle))
-    highlightOverlappingAreas(ctx)
+    highlightOverlappingAreas(ctx, selectedSections)
     circles.forEach(circle => drawCircleOutline(ctx, circle))
   }
 
@@ -52,6 +51,8 @@ const useRenderCanvas = (
 
 
   const renderSelectedSections = (highlightIds: number[][]) => {
+    circles.forEach(circle => circle.color = 'rgba(0, 0, 0, 0)')
+
     highlightIds.forEach(ids => {
       if (ids.length === 1) {
         const id = ids[0]
@@ -60,11 +61,7 @@ const useRenderCanvas = (
             circle.color = selectColor
           }
         })
-      }
-    })
-
-    highlightIds.forEach(ids => {
-      if (ids.length > 1) {
+      } else {
         overlaps.forEach(overlap => {
           const overlapIds = overlap.circles.map(circle => circle.id).sort((a, b) => a - b)
           const sortedIds = [...ids].sort((a, b) => a - b)
@@ -105,7 +102,7 @@ const useRenderCanvas = (
     }
   }
 
-  const highlightOverlappingAreas = (ctx: CanvasRenderingContext2D) => {
+  const highlightOverlappingAreas = (ctx: CanvasRenderingContext2D, selectedSections: number[][]) => {
     overlaps.length = 0
     currentOverlapId.value = 0
 

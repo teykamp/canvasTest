@@ -12,6 +12,7 @@
       @click.left="handleCanvasClick"
       @click.right.prevent="deleteCircle"
     ></canvas>
+    <button @click="cycleThing">dsads</button>
   </div>
 </template>
 
@@ -24,7 +25,8 @@ import { isInsideCircle, isOnEdge} from '../utils/circleUtils'
 import { convertNameListToIdList } from '../utils/idToNameUtils'
 import useGetAllSelectablePieces from '../composables/useGetAllSelectablePieces'
 
-const thingToTest = ref([['A'], ['A', 'B'], ['B']])
+const thingToTest = ref([['A'], ['B']])
+
 
 const allSections = ref<string[][]>([])
 
@@ -49,8 +51,13 @@ const circles = reactive<Circle[]>([])
 
 const getAllSelectablePieces = useGetAllSelectablePieces()
 
+const { drawCircles } = useRenderCanvas(canvas, circles, overlaps, currentOverlapId, selectedOverlap)
 
-const { drawCircles } = useRenderCanvas(canvas, circles, overlaps, currentOverlapId, selectedOverlap, convertNameListToIdList(thingToTest))
+const cycleThing = () => {
+  thingToTest.value = [...[['A', 'B']]]
+  drawCircles(convertNameListToIdList(thingToTest.value))
+  drawCircles(convertNameListToIdList(thingToTest.value))
+}
 
 const getMousePos = (event: MouseEvent) => {
 
@@ -98,7 +105,7 @@ const startDrag = (event: MouseEvent) => {
 
     circles.push(circles.splice(currentCircleIndex.value, 1)[0])
     currentCircleIndex.value = circles.length - 1
-    drawCircles()
+    drawCircles(convertNameListToIdList(thingToTest.value))
   } else {
     startSelection(event)
   }
@@ -123,7 +130,7 @@ const drag = (event: MouseEvent) => {
       circle.radius = Math.max(10, Math.sqrt(dx * dx + dy * dy))
     }
 
-    drawCircles()
+    drawCircles(convertNameListToIdList(thingToTest.value))
   } else {
     drawSelection(event)
   }
@@ -149,7 +156,7 @@ const createCircle = (event: MouseEvent) => {
     offsetY: 0,
   })
   currentCircleId.value++
-  drawCircles()
+  drawCircles(convertNameListToIdList(thingToTest.value))
 }
 
 const handleCanvasClick = (event: MouseEvent) => {
@@ -174,7 +181,7 @@ const handleCanvasClick = (event: MouseEvent) => {
     circles.forEach(circle => circle.selected = false)
     selectedOverlap.value = null
   }
-  drawCircles()
+  drawCircles(convertNameListToIdList(thingToTest.value))
 
 
   circlesSelectedByDrag.value = false
@@ -184,7 +191,7 @@ const deleteCircle = () => {
   const selectedCircleIndex = circles.findIndex(circle => circle.selected)
   if (selectedCircleIndex !== -1) {
     circles.splice(selectedCircleIndex, 1)
-    drawCircles()
+    drawCircles(convertNameListToIdList(thingToTest.value))
   }
 }
 
@@ -204,7 +211,7 @@ const drawSelection = (event: MouseEvent) => {
   const width = currentPoint.x - selectionStartPoint.x
   const height = currentPoint.y - selectionStartPoint.y
 
-  drawCircles()
+  drawCircles(convertNameListToIdList(thingToTest.value))
 
   ctx.strokeStyle = 'blue'
   ctx.lineWidth = 1
@@ -231,7 +238,7 @@ const endSelection = () => {
 }
 
 onMounted(() => {
-  drawCircles()
+  drawCircles(convertNameListToIdList(thingToTest.value))
 })
 </script>
 
